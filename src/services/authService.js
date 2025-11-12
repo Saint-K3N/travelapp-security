@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
+import { initializeSession, terminateSession, configureSessionPersistence } from './SessionService';
 
 // Validate email format
 const validateEmail = (email) => {
@@ -39,6 +40,9 @@ export const registerUser = async (email, password, username) => {
     if (!username || username.trim().length === 0) {
       throw new Error('Username is required');
     }
+
+    // Configure session persistence
+    await configureSessionPersistence();
 
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -102,6 +106,9 @@ export const loginUser = async (email, password) => {
       throw new Error('Password is required');
     }
 
+    // Configure session persistence
+    await configureSessionPersistence();
+
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
     
@@ -122,6 +129,9 @@ export const loginUser = async (email, password) => {
         updatedAt: serverTimestamp()
       }, { merge: true });
     }
+    
+    // Initialize session after successful login
+    await initializeSession(user);
     
     return user;
   } catch (error) {
@@ -191,6 +201,8 @@ export const verifyEmail = async (code) => {
 // Logout user
 export const logoutUser = async () => {
   try {
+    // Terminate session before signing out
+    terminateSession();
     await signOut(auth);
   } catch (error) {
     throw error;
