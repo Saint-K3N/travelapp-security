@@ -12,6 +12,12 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
 import { initializeSession, terminateSession, configureSessionPersistence } from './SessionService';
+import { 
+  deleteUser,
+  reauthenticateWithCredential,
+  EmailAuthProvider
+} from 'firebase/auth';
+import { deleteDoc } from 'firebase/firestore';
 
 // Validate email format
 const validateEmail = (email) => {
@@ -25,6 +31,31 @@ const validatePassword = (password) => {
     throw new Error('Password must be at least 6 characters long');
   }
   return true;
+};
+
+export const deleteUserAccount = async (password) => {
+  try {
+    const user = auth.currentUser;
+    
+    if (!user) {
+      throw new Error('No user is currently signed in');
+    }
+    
+    // Re-authenticate user before deletion
+    const credential = EmailAuthProvider.credential(user.email, password);
+    await reauthenticateWithCredential(user, credential);
+    
+    // Delete user document from Firestore
+    await deleteDoc(doc(db, 'users', user.uid));
+    
+    // Delete user from Firebase Auth
+    await deleteUser(user);
+    
+    return true;
+  } catch (error) {
+    console.error('Delete account error:', error);
+    throw error;
+  }
 };
 
 // Register new user with email verification

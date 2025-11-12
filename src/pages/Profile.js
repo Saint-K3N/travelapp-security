@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaLock, FaEdit, FaSave, FaTimes, FaSignOutAlt, FaSignInAlt, FaEye, FaEyeSlash, FaExclamationTriangle } from 'react-icons/fa';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { loginUser, logoutUser, getUserData, updateUserProfile, checkUserExists } from '../services/authService';
+import { loginUser, logoutUser, getUserData, updateUserProfile, checkUserExists, deleteUserAccount } from '../services/authService';
 import { 
   isAccountLocked, 
   recordFailedAttempt, 
@@ -35,6 +35,11 @@ function Profile() {
   const [isLocked, setIsLocked] = useState(false);
   const [lockoutTime, setLockoutTime] = useState(0);
   const [remainingAttempts, setRemainingAttempts] = useState(3);
+
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+const [deletePassword, setDeletePassword] = useState('');
+const [deleteError, setDeleteError] = useState('');
+const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   // Debug: Log state changes
   useEffect(() => {
@@ -275,6 +280,36 @@ function Profile() {
     setIsEditing(false);
     setError('');
   };
+  const handleDeleteAccount = async (e) => {
+  e.preventDefault();
+  setDeleteError('');
+  setLoading(true);
+
+  try {
+    await deleteUserAccount(deletePassword);
+    // Account deleted successfully, user will be signed out automatically
+    navigate('/');
+  } catch (err) {
+    console.error('Delete account error:', err);
+    
+    if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+      setDeleteError('Incorrect password. Please try again.');
+    } else if (err.code === 'auth/too-many-requests') {
+      setDeleteError('Too many attempts. Please try again later.');
+    } else {
+      setDeleteError('Failed to delete account. Please try again.');
+    }
+  } finally {
+    setLoading(false);
+  }
+};
+
+const handleCancelDelete = () => {
+  setShowDeleteModal(false);
+  setDeletePassword('');
+  setDeleteError('');
+  setShowDeletePassword(false);
+};
 
   if (loading && !currentUser) {
     return (
@@ -643,6 +678,168 @@ function Profile() {
                     <p>{profile.username}</p>
                   </div>
                 </div>
+                  {/* Delete Account Section - Add this after the profile-info div closes */}
+                  {!isEditing && (
+                    <div style={{
+                      marginTop: '3rem',
+                      paddingTop: '2rem',
+                      borderTop: '2px solid #fee'
+                    }}>
+                      <h3 style={{ color: '#dc3545', marginBottom: '1rem' }}>Danger Zone</h3>
+                      <p style={{ color: '#6c757d', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                        Once you delete your account, there is no going back. Please be certain.
+                      </p>
+                      <button
+                        onClick={() => setShowDeleteModal(true)}
+                        style={{
+                          backgroundColor: '#dc3545',
+                          color: 'white',
+                          padding: '0.75rem 1.5rem',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '1rem',
+                          fontWeight: '600',
+                          cursor: 'pointer',
+                          transition: 'all 0.3s ease'
+                        }}
+                        onMouseOver={(e) => e.target.style.backgroundColor = '#c82333'}
+                        onMouseOut={(e) => e.target.style.backgroundColor = '#dc3545'}
+                      >
+                        Delete Account
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Delete Account Modal */}
+                  {showDeleteModal && (
+                    <div style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      zIndex: 1000
+                    }}>
+                      <div style={{
+                        backgroundColor: 'white',
+                        padding: '2rem',
+                        borderRadius: '12px',
+                        maxWidth: '450px',
+                        width: '90%',
+                        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+                      }}>
+                        <h2 style={{ color: '#dc3545', marginBottom: '1rem' }}>
+                          Delete Account
+                        </h2>
+                        <p style={{ color: '#6c757d', marginBottom: '1.5rem' }}>
+                          This action cannot be undone. All your data will be permanently deleted.
+                        </p>
+
+                        {deleteError && (
+                          <div style={{
+                            backgroundColor: '#fee',
+                            color: '#c33',
+                            padding: '0.75rem',
+                            borderRadius: '8px',
+                            marginBottom: '1rem',
+                            fontSize: '0.9rem'
+                          }}>
+                            {deleteError}
+                          </div>
+                        )}
+
+                        <form onSubmit={handleDeleteAccount}>
+                          <div className="form-group">
+                            <label htmlFor="deletePassword" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                              <FaLock /> Re-enter your password to confirm
+                            </label>
+                            <div style={{ position: 'relative' }}>
+                              <input
+                                type={showDeletePassword ? 'text' : 'password'}
+                                id="deletePassword"
+                                value={deletePassword}
+                                onChange={(e) => {
+                                  setDeletePassword(e.target.value);
+                                  setDeleteError('');
+                                }}
+                                placeholder="Enter your password"
+                                required
+                                style={{
+                                  width: '100%',
+                                  padding: '0.75rem',
+                                  paddingRight: '40px',
+                                  border: '1px solid #ddd',
+                                  borderRadius: '8px',
+                                  fontSize: '1rem'
+                                }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => setShowDeletePassword(!showDeletePassword)}
+                                style={{
+                                  position: 'absolute',
+                                  right: '10px',
+                                  top: '50%',
+                                  transform: 'translateY(-50%)',
+                                  background: 'none',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#6c757d',
+                                  fontSize: '1.1rem'
+                                }}
+                              >
+                                {showDeletePassword ? <FaEyeSlash /> : <FaEye />}
+                              </button>
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
+                            <button
+                              type="submit"
+                              disabled={loading}
+                              style={{
+                                flex: 1,
+                                backgroundColor: '#dc3545',
+                                color: 'white',
+                                padding: '0.75rem',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                opacity: loading ? 0.6 : 1
+                              }}
+                            >
+                              {loading ? 'Deleting...' : 'Yes, Delete My Account'}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={handleCancelDelete}
+                              disabled={loading}
+                              style={{
+                                flex: 1,
+                                backgroundColor: '#6c757d',
+                                color: 'white',
+                                padding: '0.75rem',
+                                border: 'none',
+                                borderRadius: '8px',
+                                fontSize: '1rem',
+                                fontWeight: '600',
+                                cursor: loading ? 'not-allowed' : 'pointer',
+                                opacity: loading ? 0.6 : 1
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
 
                 <div className="info-item">
                   <FaEnvelope className="info-icon" />
