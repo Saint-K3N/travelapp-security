@@ -89,6 +89,7 @@ export const registerUser = async (email, password, username) => {
       email: email,
       profilePic: 'https://via.placeholder.com/150',
       emailVerified: false,
+      role: 'user', // Default role
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
@@ -275,6 +276,69 @@ export const updateUserProfile = async (userId, userData) => {
       updatedAt: serverTimestamp()
     }, { merge: true });
   } catch (error) {
+    throw error;
+  }
+};
+
+// Get all users (Admin only)
+export const getAllUsers = async () => {
+  try {
+    const { collection, getDocs, orderBy, query } = await import('firebase/firestore');
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, orderBy('createdAt', 'desc'));
+    const querySnapshot = await getDocs(q);
+    
+    const users = [];
+    querySnapshot.forEach((doc) => {
+      users.push({
+        uid: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date()
+      });
+    });
+    
+    return users;
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    throw error;
+  }
+};
+
+// Check if user is admin
+export const checkIfAdmin = async (userId) => {
+  try {
+    const userDoc = await getDoc(doc(db, 'users', userId));
+    if (userDoc.exists()) {
+      return userDoc.data().role === 'admin';
+    }
+    return false;
+  } catch (error) {
+    console.error('Error checking admin status:', error);
+    return false;
+  }
+};
+
+// Update user role (Admin only)
+export const updateUserRole = async (userId, newRole) => {
+  try {
+    await setDoc(doc(db, 'users', userId), {
+      role: newRole,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+    return true;
+  } catch (error) {
+    console.error('Error updating user role:', error);
+    throw error;
+  }
+};
+
+// Delete user by admin
+export const deleteUserByAdmin = async (userId) => {
+  try {
+    await deleteDoc(doc(db, 'users', userId));
+    return true;
+  } catch (error) {
+    console.error('Error deleting user:', error);
     throw error;
   }
 };

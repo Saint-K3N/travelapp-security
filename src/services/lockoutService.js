@@ -7,15 +7,12 @@ const getLockoutData = (email) => {
   if (!email) return null;
   
   const key = `lockout_${email}`;
-  console.log('GETTING from localStorage - Key:', key); // Debug
   const data = localStorage.getItem(key);
-  console.log('RAW data retrieved:', data); // Debug
   
   if (!data) return null;
   
   try {
     const parsed = JSON.parse(data);
-    console.log('PARSED data:', parsed); // Debug
     return parsed;
   } catch (error) {
     console.error('Error parsing lockout data:', error);
@@ -29,12 +26,7 @@ const saveLockoutData = (email, data) => {
   
   const key = `lockout_${email}`;
   const jsonData = JSON.stringify(data);
-  console.log('SAVING to localStorage - Key:', key, 'Data:', jsonData); // Debug
   localStorage.setItem(key, jsonData);
-  
-  // Verify it was saved
-  const saved = localStorage.getItem(key);
-  console.log('VERIFIED save - Retrieved:', saved); // Debug
 };
 
 // Clear lockout data
@@ -72,7 +64,6 @@ export const isAccountLocked = (email) => {
   }
   
   // 3. If no 'unlockTime' is set, the account is not locked.
-  //    (Do NOT clear data here, as it contains the attempt count)
   return { locked: false };
 };
 
@@ -80,11 +71,7 @@ export const isAccountLocked = (email) => {
 export const recordFailedAttempt = (email) => {
   if (!email) return { locked: false };
   
-  console.log('recordFailedAttempt called with email:', JSON.stringify(email)); // Debug - show exact email
-  
   let lockoutData = getLockoutData(email);
-  
-  console.log('Before recording attempt - Current data:', lockoutData); // Debug
   
   if (!lockoutData) {
     lockoutData = {
@@ -96,14 +83,10 @@ export const recordFailedAttempt = (email) => {
   lockoutData.attempts += 1;
   lockoutData.lastAttemptTime = Date.now();
   
-  console.log('After increment - Attempts:', lockoutData.attempts); // Debug
-  
   // Check if max attempts reached
   if (lockoutData.attempts >= MAX_ATTEMPTS) {
     lockoutData.lockoutUntil = Date.now() + LOCKOUT_DURATION;
     saveLockoutData(email, lockoutData);
-    
-    console.log('LOCKED! Lockout until:', new Date(lockoutData.lockoutUntil)); // Debug
     
     return {
       locked: true,
@@ -114,15 +97,11 @@ export const recordFailedAttempt = (email) => {
   
   saveLockoutData(email, lockoutData);
   
-  const result = {
+  return {
     locked: false,
     attempts: lockoutData.attempts,
     remainingAttempts: MAX_ATTEMPTS - lockoutData.attempts
   };
-  
-  console.log('Returning result:', result); // Debug
-  
-  return result;
 };
 
 // Reset attempts after successful login
@@ -145,13 +124,6 @@ export const getRemainingAttempts = (email) => {
   }
   
   return MAX_ATTEMPTS - lockoutData.attempts;
-};
-
-// Format time for display (MM:SS)
-export const formatTime = (seconds) => {
-  const mins = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };
 
 // Get lockout information for a specific user (for admin use)
@@ -178,4 +150,11 @@ export const getLockoutInfo = (email) => {
     lastAttemptTime: lockoutData.lastAttemptTime,
     firstAttemptTime: lockoutData.firstAttemptTime
   };
+};
+
+// Format time for display (MM:SS)
+export const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 };

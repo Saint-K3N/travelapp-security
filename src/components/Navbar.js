@@ -1,10 +1,36 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { FaHome, FaPlane, FaUser, FaCloudSun, FaDollarSign, FaShare } from 'react-icons/fa';
+import { FaHome, FaPlane, FaUser, FaCloudSun, FaDollarSign, FaShare, FaUserShield } from 'react-icons/fa';
 import '../styles/Navbar.css';
+import { auth } from '../config/firebase';
+import { checkIfAdmin } from '../services/authService';
 
 function Navbar() {
   const location = useLocation();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        setIsLoggedIn(true);
+        const adminStatus = await checkIfAdmin(user.uid);
+        setIsAdmin(adminStatus);
+      } else {
+        setIsLoggedIn(false);
+        setIsAdmin(false);
+      }
+    };
+    
+    // Check on mount
+    checkAdminStatus();
+    
+    // Listen for auth state changes
+    const unsubscribe = auth.onAuthStateChanged(checkAdminStatus);
+    
+    return () => unsubscribe();
+  }, []);
 
   const isActive = (path) => {
     return location.pathname === path ? 'active' : '';
@@ -53,6 +79,14 @@ function Navbar() {
               Profile
             </Link>
           </li>
+          {isLoggedIn && isAdmin && (
+            <li className="navbar-item">
+              <Link to="/admin" className={`navbar-link ${isActive('/admin')}`}>
+                <FaUserShield className="navbar-icon" />
+                Admin
+              </Link>
+            </li>
+          )}
         </ul>
       </div>
     </nav>
