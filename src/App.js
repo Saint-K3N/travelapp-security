@@ -9,6 +9,9 @@ import Currency from './pages/Currency';
 import Share from './pages/Share';
 import Profile from './pages/Profile';
 import Register from './pages/Register';
+import ResetPassword from './pages/ResetPassword';
+import ForgotPassword from './pages/ForgotPassword';
+import VerifyEmail from './pages/VerifyEmail';
 import './styles/global.css';
 import './App.css';
 
@@ -26,6 +29,9 @@ function App() {
             <Route path="/share" element={<Share />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
           </Routes>
         </main>
         <Footer />

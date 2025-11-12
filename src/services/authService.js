@@ -2,7 +2,12 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signOut,
-  updateProfile
+  updateProfile,
+  sendEmailVerification,
+  sendPasswordResetEmail,
+  applyActionCode,
+  verifyPasswordResetCode,
+  confirmPasswordReset
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
@@ -21,7 +26,7 @@ const validatePassword = (password) => {
   return true;
 };
 
-// Register new user
+// Register new user with email verification
 export const registerUser = async (email, password, username) => {
   try {
     // Validate inputs
@@ -48,9 +53,13 @@ export const registerUser = async (email, password, username) => {
       username: username,
       email: email,
       profilePic: 'https://via.placeholder.com/150',
+      emailVerified: false,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     });
+
+    // Send email verification
+    await sendEmailVerification(user);
 
     return user;
   } catch (error) {
@@ -58,7 +67,26 @@ export const registerUser = async (email, password, username) => {
   }
 };
 
-// Login user
+// Resend email verification
+export const resendVerificationEmail = async () => {
+  try {
+    const user = auth.currentUser;
+    if (!user) {
+      throw new Error('No user is currently signed in');
+    }
+    
+    if (user.emailVerified) {
+      throw new Error('Email is already verified');
+    }
+    
+    await sendEmailVerification(user);
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Login user with email verification check
 export const loginUser = async (email, password) => {
   try {
     // Validate inputs
@@ -75,7 +103,86 @@ export const loginUser = async (email, password) => {
     }
 
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
-    return userCredential.user;
+    const user = userCredential.user;
+    
+    // Check if email is verified
+    if (!user.emailVerified) {
+      // Sign out the user immediately
+      await signOut(auth);
+      const error = new Error('Please verify your email before logging in. We sent a verification link to your email address. Click the link to activate your account.');
+      error.code = 'auth/email-not-verified';
+      throw error;
+    }
+    
+    // Update Firestore if email verification status changed
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    if (userDoc.exists() && !userDoc.data().emailVerified) {
+      await setDoc(doc(db, 'users', user.uid), {
+        emailVerified: true,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+    
+    return user;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Send password reset email
+export const sendPasswordReset = async (email) => {
+  try {
+    if (!email || email.trim().length === 0) {
+      throw new Error('Email is required');
+    }
+    
+    if (!validateEmail(email)) {
+      throw new Error('Invalid email format');
+    }
+    
+    await sendPasswordResetEmail(auth, email);
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Verify password reset code
+export const verifyResetCode = async (code) => {
+  try {
+    const email = await verifyPasswordResetCode(auth, code);
+    return email;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Confirm password reset
+export const resetPassword = async (code, newPassword) => {
+  try {
+    validatePassword(newPassword);
+    await confirmPasswordReset(auth, code, newPassword);
+    return true;
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Verify email with action code
+export const verifyEmail = async (code) => {
+  try {
+    await applyActionCode(auth, code);
+    
+    // Update Firestore
+    const user = auth.currentUser;
+    if (user) {
+      await setDoc(doc(db, 'users', user.uid), {
+        emailVerified: true,
+        updatedAt: serverTimestamp()
+      }, { merge: true });
+    }
+    
+    return true;
   } catch (error) {
     throw error;
   }
@@ -106,7 +213,6 @@ export const getUserData = async (userId) => {
 // Check if user exists in Firestore
 export const checkUserExists = async (email) => {
   try {
-    // Query Firestore to see if user with this email exists
     const { collection, query, where, getDocs } = await import('firebase/firestore');
     const usersRef = collection(db, 'users');
     const q = query(usersRef, where('email', '==', email));

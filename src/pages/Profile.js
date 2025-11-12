@@ -111,6 +111,15 @@ function Profile() {
     }
   }, [loginForm.email]);
 
+  // Clear success messages after they're shown
+  useEffect(() => {
+    if (isLoggedIn) {
+      sessionStorage.removeItem('registrationSuccess');
+      sessionStorage.removeItem('registrationEmail');
+      sessionStorage.removeItem('emailVerified');
+    }
+  }, [isLoggedIn]);
+
   const handleLoginChange = (e) => {
     const { name, value } = e.target;
     setLoginForm({ ...loginForm, [name]: value });
@@ -288,6 +297,49 @@ function Profile() {
               <FaUser className="login-icon" />
               <h2>Welcome Back!</h2>
               <p>Please login to access your profile</p>
+
+              {/* Registration Success Message */}
+              {sessionStorage.getItem('registrationSuccess') === 'true' && (
+                <div style={{
+                  backgroundColor: '#d4edda',
+                  color: '#155724',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  marginBottom: '1rem',
+                  fontSize: '0.95rem',
+                  border: '1px solid #28a745',
+                  textAlign: 'left'
+                }}>
+                  <strong>✓ Registration Successful!</strong>
+                  <p style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                    We've sent a verification email to:
+                  </p>
+                  <p style={{ fontWeight: 'bold', marginBottom: '0.5rem' }}>
+                    {sessionStorage.getItem('registrationEmail')}
+                  </p>
+                  <p style={{ marginBottom: 0, fontSize: '0.9rem' }}>
+                    Please check your inbox and click the verification link before logging in.
+                  </p>
+                </div>
+              )}
+              
+              {/* Email Verified Success Message */}
+              {sessionStorage.getItem('emailVerified') === 'true' && (
+                <div style={{
+                  backgroundColor: '#d4edda',
+                  color: '#155724',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  marginBottom: '1rem',
+                  fontSize: '0.95rem',
+                  border: '1px solid #28a745'
+                }}>
+                  <strong>✓ Email Verified!</strong>
+                  <p style={{ marginTop: '0.5rem', marginBottom: 0 }}>
+                    Your account is now active. You can log in below.
+                  </p>
+                </div>
+              )}
               
               {/* Account Locked Warning */}
               {isLocked && (
@@ -318,14 +370,27 @@ function Profile() {
               
               {error && !isLocked && (
                 <div className="error-message" style={{
-                  backgroundColor: '#fee',
-                  color: '#c33',
+                  backgroundColor: error.includes('verify your email') ? '#fff3cd' : '#fee',
+                  color: error.includes('verify your email') ? '#856404' : '#c33',
                   padding: '0.75rem',
                   borderRadius: '8px',
                   marginBottom: '1rem',
-                  fontSize: '0.9rem'
+                  fontSize: '0.9rem',
+                  border: error.includes('verify your email') ? '1px solid #ffc107' : 'none'
                 }}>
-                  {error}
+                  {error.includes('verify your email') ? (
+                    <>
+                      <strong>⚠️ Email Not Verified</strong>
+                      <p style={{ marginTop: '0.5rem', marginBottom: '0.5rem' }}>
+                        {error}
+                      </p>
+                      <p style={{ marginBottom: 0, fontSize: '0.85rem', fontStyle: 'italic' }}>
+                        Check your inbox for the verification email. Don't forget to check spam/junk folders!
+                      </p>
+                    </>
+                  ) : (
+                    error
+                  )}
                 </div>
               )}
               
@@ -408,6 +473,21 @@ function Profile() {
                   <FaSignInAlt /> {loading ? 'Logging in...' : isLocked ? 'Account Locked' : 'Login'}
                 </button>
               </form>
+              <button 
+                onClick={() => navigate('/forgot-password')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#4A90E2',
+                  cursor: 'pointer',
+                  fontSize: '0.9rem',
+                  textDecoration: 'underline',
+                  padding: '0.5rem 0',
+                  marginTop: '1rem'
+                }}
+              >
+                Forgot Password?
+              </button>
 
               <div className="credentials-hint">
                 <p><strong>Demo Account:</strong></p>

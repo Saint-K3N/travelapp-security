@@ -91,7 +91,14 @@ function Register() {
 
     try {
       await registerUser(registerForm.email, registerForm.password, registerForm.username);
-      // Registration successful, navigate to profile
+      // Registration successful, show success message and redirect to login
+      setError(''); // Clear any errors
+      
+      // Store success message for login page
+      sessionStorage.setItem('registrationSuccess', 'true');
+      sessionStorage.setItem('registrationEmail', registerForm.email);
+      
+      // Navigate to login page
       navigate('/profile');
     } catch (err) {
       console.error('Registration error:', err);
