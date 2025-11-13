@@ -1,19 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { FaFacebook, FaInstagram, FaTwitter, FaLink, FaImage, FaCheckCircle, FaLock, FaCopy, FaCheck } from 'react-icons/fa';
 import { 
-  FacebookShareButton, 
-  TwitterShareButton,
   FacebookIcon,
   TwitterIcon
 } from 'react-share';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../config/firebase';
-import { getSocialConnections, updateSocialConnections } from '../services/socialService';
+import { getSocialConnections, disconnectTwitter, disconnectFacebook, disconnectInstagram } from '../services/socialService';import { initiateTwitterAuth } from '../services/twitterOAuthService';
+import { initiateFacebookAuth } from '../services/facebookOAuthService';
 import '../styles/Share.css';
+import OAuthWarningModal from '../components/OAuthWarningModal';
+import { initiateInstagramAuth } from '../services/instagramOAuthService';
 
 function Share() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
   const [connectedPlatforms, setConnectedPlatforms] = useState({
@@ -30,8 +32,14 @@ function Share() {
   });
 
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
   const [copied, setCopied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [posting, setPosting] = useState(false);
+  const [showOAuthModal, setShowOAuthModal] = useState(false);
+  const [pendingPlatform, setPendingPlatform] = useState(null);
 
   // Check login status and load social connections
   useEffect(() => {
@@ -57,22 +65,145 @@ function Share() {
     return () => unsubscribe();
   }, []);
 
-  const handleConnect = async (platform) => {
+  // Handle success/error messages from callback
+  useEffect(() => {
+    if (location.state?.message) {
+      setSuccessMessage(location.state.message);
+      setShowSuccess(true);
+      setTimeout(() => setShowSuccess(false), 3000);
+      
+      // Clear location state
+      window.history.replaceState({}, document.title);
+    }
+
+    if (location.state?.error) {
+      setErrorMessage(location.state.error);
+      setShowError(true);
+      setTimeout(() => setShowError(false), 5000);
+      
+      // Clear location state
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  const handleConnectTwitter = async () => {
     if (!currentUser) return;
 
-    const newConnections = {
-      ...connectedPlatforms,
-      [platform]: !connectedPlatforms[platform]
-    };
-    
-    setConnectedPlatforms(newConnections);
-
-    // Save to Firestore
     try {
-      await updateSocialConnections(currentUser.uid, newConnections);
+      // If already connected, ask to disconnect
+      if (connectedPlatforms.twitter) {
+        const confirm = window.confirm('Do you want to disconnect Twitter?');
+        if (confirm) {
+          await disconnectTwitter(currentUser.uid);
+          setConnectedPlatforms({ ...connectedPlatforms, twitter: false });
+          setSuccessMessage('Twitter disconnected successfully!');
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 3000);
+        }
+        return;
+      }
+
+      // Start OAuth flow
+      await initiateTwitterAuth();
     } catch (err) {
-      console.error('Error updating connections:', err);
+      console.error('Error connecting Twitter:', err);
+      setErrorMessage('Failed to connect Twitter. Please try again.');
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
     }
+  };
+
+  const handleConnectFacebook = async () => {
+    if (!currentUser) return;
+
+    try {
+      // If already connected, ask to disconnect
+      if (connectedPlatforms.facebook) {
+        const confirm = window.confirm('Do you want to disconnect Facebook?');
+        if (confirm) {
+          await disconnectFacebook(currentUser.uid);
+          setConnectedPlatforms({ ...connectedPlatforms, facebook: false });
+          setSuccessMessage('Facebook disconnected successfully!');
+          setShowSuccess(true);
+          setTimeout(() => setShowSuccess(false), 3000);
+        }
+        return;
+      }
+
+      // Start OAuth flow (full redirect like Twitter)
+      await initiateFacebookAuth();
+    } catch (err) {
+      console.error('Error connecting Facebook:', err);
+      setErrorMessage('Failed to connect Facebook. Please try again.');
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
+    }
+  };
+
+  const handleConnectInstagram = async () => {
+  if (!currentUser) return;
+
+  try {
+    // If already connected, ask to disconnect
+    if (connectedPlatforms.instagram) {
+      const confirm = window.confirm('Do you want to disconnect Instagram?');
+      if (confirm) {
+        await disconnectInstagram(currentUser.uid);
+        setConnectedPlatforms({ ...connectedPlatforms, instagram: false });
+        setSuccessMessage('Instagram disconnected successfully!');
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+      }
+      return;
+    }
+
+    // Start OAuth flow (full redirect)
+    await initiateInstagramAuth();
+  } catch (err) {
+    console.error('Error connecting Instagram:', err);
+    setErrorMessage('Failed to connect Instagram. Please try again.');
+    setShowError(true);
+    setTimeout(() => setShowError(false), 3000);
+  }
+};
+
+  const handleConnect = async (platform) => {
+  // If already connected, handle disconnect
+  if (connectedPlatforms[platform]) {
+    if (platform === 'twitter') {
+      await handleConnectTwitter();
+    } else if (platform === 'facebook') {
+      await handleConnectFacebook();
+    } else if (platform === 'instagram') {
+      await handleConnectInstagram();
+    }
+    return;
+  }
+
+  // Show warning modal for new connections
+  setPendingPlatform(platform);
+  setShowOAuthModal(true);
+};
+
+  const handleOAuthConfirm = async () => {
+  setShowOAuthModal(false);
+  
+  if (pendingPlatform === 'twitter') {
+    await handleConnectTwitter();
+  } else if (pendingPlatform === 'facebook') {
+    await handleConnectFacebook();
+  } else if (pendingPlatform === 'instagram') {
+    await handleConnectInstagram();
+  } else {
+    alert(`${pendingPlatform} OAuth integration coming soon!`);
+  }
+  
+  setPendingPlatform(null);
+};
+
+  const handleOAuthCancel = () => {
+    setShowOAuthModal(false);
+    setPendingPlatform(null);
   };
 
   const handleInputChange = (e) => {
@@ -96,6 +227,135 @@ ${postData.link ? `🔗 ${postData.link}` : ''}
     });
   };
     
+  const handleShareToTwitter = async () => {
+    if (!connectedPlatforms.twitter) {
+      alert('Please connect to Twitter first!');
+      return;
+    }
+
+    if (!postData.title || !postData.description) {
+      alert('Please fill in at least the title and description!');
+      return;
+    }
+
+    setPosting(true);
+
+    try {
+      // Prepare tweet text (max 280 characters)
+      let tweetText = `${postData.title}\n\n${postData.description}`;
+      
+      if (postData.link) {
+        tweetText += `\n\n${postData.link}`;
+      }
+      
+      tweetText += '\n\n#TravelCompanion #Travel';
+
+      // Truncate if too long
+      if (tweetText.length > 280) {
+        tweetText = tweetText.substring(0, 277) + '...';
+      }
+
+      // Call Cloud Function via HTTP
+      const response = await fetch('https://us-central1-travelapp-security.cloudfunctions.net/postTweet', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          tweetText: tweetText,
+          userId: currentUser.uid
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccessMessage('Successfully posted to Twitter!');
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+        
+        // Clear form
+        setPostData({
+          title: '',
+          description: '',
+          imageUrl: '',
+          link: ''
+        });
+      } else {
+        throw new Error(result.error || 'Failed to post tweet');
+      }
+    } catch (err) {
+      console.error('Error posting to Twitter:', err);
+      setErrorMessage(err.message || 'Failed to post to Twitter. Please try again.');
+      setShowError(true);
+      setTimeout(() => setShowError(false), 5000);
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const handleShareToFacebook = async () => {
+    if (!connectedPlatforms.facebook) {
+      alert('Please connect to Facebook first!');
+      return;
+    }
+
+    if (!postData.title || !postData.description) {
+      alert('Please fill in at least the title and description!');
+      return;
+    }
+
+    setPosting(true);
+
+    try {
+      // Prepare Facebook post message
+      let message = `${postData.title}\n\n${postData.description}`;
+      
+      if (postData.link) {
+        message += `\n\n${postData.link}`;
+      }
+      
+      message += '\n\n#TravelCompanion #Travel';
+
+      // Call Cloud Function via HTTP
+      const response = await fetch('https://us-central1-travelapp-security.cloudfunctions.net/postFacebook', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          message: message,
+          userId: currentUser.uid
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        setSuccessMessage('Successfully posted to Facebook!');
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 3000);
+        
+        // Clear form
+        setPostData({
+          title: '',
+          description: '',
+          imageUrl: '',
+          link: ''
+        });
+      } else {
+        throw new Error(result.error || 'Failed to post to Facebook');
+      }
+    } catch (err) {
+      console.error('Error posting to Facebook:', err);
+      setErrorMessage(err.message || 'Failed to post to Facebook. Please try again.');
+      setShowError(true);
+      setTimeout(() => setShowError(false), 5000);
+    } finally {
+      setPosting(false);
+    }
+  };
+
   const handleShare = (platform) => {
     if (!connectedPlatforms[platform]) {
       alert(`Please connect to ${platform} first!`);
@@ -107,7 +367,18 @@ ${postData.link ? `🔗 ${postData.link}` : ''}
       return;
     }
 
-    // Simulate successful sharing
+    if (platform === 'twitter') {
+      handleShareToTwitter();
+      return;
+    }
+
+    if (platform === 'facebook') {
+      handleShareToFacebook();
+      return;
+    }
+
+    // For other platforms
+    setSuccessMessage(`${platform} posting coming soon!`);
     setShowSuccess(true);
     setTimeout(() => setShowSuccess(false), 3000);
   };
@@ -152,7 +423,13 @@ ${postData.link ? `🔗 ${postData.link}` : ''}
 
         {showSuccess && (
           <div className="success-message">
-            <FaCheckCircle /> Post shared successfully!
+            <FaCheckCircle /> {successMessage}
+          </div>
+        )}
+
+        {showError && (
+          <div className="error-message">
+            ✗ {errorMessage}
           </div>
         )}
 
@@ -214,6 +491,7 @@ ${postData.link ? `🔗 ${postData.link}` : ''}
                 <button 
                   className={`btn-connect ${connectedPlatforms.twitter ? 'connected' : ''}`}
                   onClick={() => handleConnect('twitter')}
+                  disabled={posting}
                 >
                   {connectedPlatforms.twitter ? (
                     <>
@@ -334,27 +612,14 @@ ${postData.link ? `🔗 ${postData.link}` : ''}
               </div>
 
               <div className="share-buttons-grid">
-                <div className="share-button-wrapper">
-                  <FacebookShareButton
-                    url={shareUrl}
-                    quote={shareTitle}
-                    hashtag="#TravelCompanion"
-                    disabled={!connectedPlatforms.facebook}
-                  >
-                    <button 
-                      className={`btn-share facebook ${!connectedPlatforms.facebook ? 'disabled' : ''}`}
-                      onClick={(e) => {
-                        if (!connectedPlatforms.facebook) {
-                          e.preventDefault();
-                          handleShare('facebook');
-                        }
-                      }}
-                    >
-                      <FacebookIcon size={32} round />
-                      <span>Share on Facebook</span>
-                    </button>
-                  </FacebookShareButton>
-                </div>
+                <button 
+                  className={`btn-share facebook ${!connectedPlatforms.facebook ? 'disabled' : ''}`}
+                  onClick={() => handleShare('facebook')}
+                  disabled={!connectedPlatforms.facebook}
+                >
+                  <FacebookIcon size={32} round />
+                  <span>Share on Facebook</span>
+                </button>
 
                 <button 
                   className={`btn-share instagram ${!connectedPlatforms.instagram ? 'disabled' : ''}`}
@@ -364,31 +629,26 @@ ${postData.link ? `🔗 ${postData.link}` : ''}
                   <span>Share on Instagram</span>
                 </button>
 
-                <div className="share-button-wrapper">
-                  <TwitterShareButton
-                    url={shareUrl}
-                    title={shareTitle}
-                    hashtags={['TravelCompanion', 'Travel']}
-                    disabled={!connectedPlatforms.twitter}
-                  >
-                    <button 
-                      className={`btn-share twitter ${!connectedPlatforms.twitter ? 'disabled' : ''}`}
-                      onClick={(e) => {
-                        if (!connectedPlatforms.twitter) {
-                          e.preventDefault();
-                          handleShare('twitter');
-                        }
-                      }}
-                    >
-                      <TwitterIcon size={32} round />
-                      <span>Share on Twitter</span>
-                    </button>
-                  </TwitterShareButton>
-                </div>
+                <button 
+                  className={`btn-share twitter ${(!connectedPlatforms.twitter || posting) ? 'disabled' : ''}`}
+                  onClick={() => handleShare('twitter')}
+                  disabled={!connectedPlatforms.twitter || posting}
+                >
+                  <TwitterIcon size={32} round />
+                  <span>{posting ? 'Posting...' : 'Share on Twitter'}</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
+
+        {showOAuthModal && (
+          <OAuthWarningModal
+            platform={pendingPlatform?.charAt(0).toUpperCase() + pendingPlatform?.slice(1)}
+            onConfirm={handleOAuthConfirm}
+            onCancel={handleOAuthCancel}
+          />
+        )}
       </div>
     </div>
   );
