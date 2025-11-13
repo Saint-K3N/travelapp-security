@@ -5,13 +5,13 @@ import { getFunctions } from 'firebase/functions';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCmBTVlO7QZEZCVZNVFtft8tsdvxLQXfbc",
-  authDomain: "travelapp-security.firebaseapp.com",
-  projectId: "travelapp-security",
-  storageBucket: "travelapp-security.firebasestorage.app",
-  messagingSenderId: "287074076883",
-  appId: "1:287074076883:web:1374756600c2b107942c26",
-  measurementId: "G-ZL5EHSNQ9T"
+  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
+  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_FIREBASE_APP_ID,
+  measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase

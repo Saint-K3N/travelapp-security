@@ -165,17 +165,6 @@ const [showDeletePassword, setShowDeletePassword] = useState(false);
     setLoading(true);
 
     try {
-      // First, check if user exists in Firestore
-      const userExists = await checkUserExists(loginForm.email);
-      
-      if (!userExists) {
-        // User not found - don't trigger lockout system
-        setError('No such user found. Please check your email or register a new account.');
-        setRemainingAttempts(3); // Keep at 3 attempts
-        setLoading(false);
-        return;
-      }
-
       // User exists, attempt login
       await loginUser(loginForm.email, loginForm.password);
       
@@ -202,7 +191,7 @@ const [showDeletePassword, setShowDeletePassword] = useState(false);
         } else {
           console.log('Setting remaining attempts to:', attemptResult.remainingAttempts); // Debug
           setRemainingAttempts(attemptResult.remainingAttempts);
-          setError(`Incorrect password. ${attemptResult.remainingAttempts} attempt${attemptResult.remainingAttempts !== 1 ? 's' : ''} remaining.`);
+          setError(`Invalid email or password. ${attemptResult.remainingAttempts} attempt${attemptResult.remainingAttempts !== 1 ? 's' : ''} remaining.`);
         }
       } else if (err.code === 'auth/invalid-email') {
         // Invalid email format
