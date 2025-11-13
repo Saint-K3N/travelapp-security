@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaUsers, FaUserShield, FaTrash, FaSearch, FaExclamationTriangle, FaShieldAlt, FaLock, FaUnlock } from 'react-icons/fa';
+import { FaUsers, FaUserShield, FaTrash, FaSearch, FaExclamationTriangle, FaShieldAlt, FaLock, FaUnlock, FaHistory } from 'react-icons/fa';
 import { auth } from '../config/firebase';
 import { getAllUsers, updateUserRole, deleteUserByAdmin, checkIfAdmin } from '../services/authService';
 import { getLockoutInfo } from '../services/lockoutService';
 import '../styles/AdminDashboard.css';
+import { Link } from 'react-router-dom';
 
 function AdminDashboard() {
   const navigate = useNavigate();
@@ -217,6 +218,7 @@ function AdminDashboard() {
               ✗ {error}
             </div>
           )}
+          
 
           <div className="stats-grid" style={{ marginBottom: '3rem' }}>
             <div className="stat-item">
@@ -239,6 +241,12 @@ function AdminDashboard() {
               <h3>{users.filter(u => lockoutData[u.email]?.isLocked).length}</h3>
               <p>Locked Accounts</p>
             </div>
+          </div>
+
+          <div className="admin-actions">
+            <Link to="/admin/audit-trail" className="btn-audit">
+              <FaHistory /> View Audit Trail
+            </Link>
           </div>
 
           <div className="search-section">

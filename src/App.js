@@ -16,6 +16,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import VerifyEmail from './pages/VerifyEmail';
 import { useSession } from './hooks/useSession';
 import AdminDashboard from './pages/AdminDashboard';
+import AuditTrail from './components/AuditTrail';
 import './styles/global.css';
 import './App.css';
 
@@ -50,6 +51,7 @@ function App() {
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/audit-trail" element={<AuditTrail />} />
           </Routes>
         </main>
         <Footer />
