@@ -1,70 +1,207 @@
-# Getting Started with Create React App
+# TravelCompanion - Secure Travel Planning Application
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A comprehensive web application for planning and managing travel itineraries with integrated weather forecasting, currency conversion, and social sharing capabilities. This project demonstrates secure application development practices with Firebase Authentication and hosting.
 
-## Available Scripts
+## 📋 Project Overview
 
-In the project directory, you can run:
+TravelCompanion is a React-based single-page application (SPA) that helps users plan their trips by providing essential travel tools in one centralized platform. The application implements security best practices including input validation, password complexity enforcement, account lockout mechanisms, and encrypted communication.
 
-### `npm start`
+**Developed as part of:** INT6005CEM Security 
+**Institution:** INTI International College Penang (Coventry University UK)
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Contributors: 
+- Saint-K3N (Tan Khoon Khye)
+- desmond0315 (Desmond Kok)
+- NawaSM (Nawa Silumelume Mubukwanu)
+- Phin0508 (Ee Leong Zjen Phin)
+- Anyalex22 (Lee Yueh Yu) 
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## ✨ Core Features
 
-### `npm test`
+### 🗺️ Travel Planner
+- Create, edit, and delete travel itineraries
+- Add destinations with dates and notes
+- Organize multiple trips in one dashboard
+- Persistent storage using Firebase Firestore
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### 🌤️ Weather Information
+- Real-time weather data for any city worldwide
+- Current temperature, conditions, and descriptions
+- Powered by OpenWeatherMap API
+- Helpful for trip planning and packing decisions
 
-### `npm run build`
+### 💱 Currency Converter
+- Convert between multiple international currencies
+- Real-time exchange rates
+- Support for major world currencies (USD, EUR, GBP, JPY, MYR, etc.)
+- Integrated with ExchangeRate-API
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+### 📱 Social Sharing
+- Share travel plans on social media platforms
+- Connect with Facebook, Twitter, Instagram, WhatsApp
+- Export and share itineraries with friends and family
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+### 👤 User Profile & Authentication
+- Secure user registration with email verification
+- Login with password complexity requirements
+- Account lockout after failed login attempts
+- Profile management and logout functionality
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 🔒 Security Features
 
-### `npm run eject`
+This application implements enterprise-grade security controls:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+- **Input Validation**: Dual-layer (client + server) validation preventing injection attacks
+- **Password Enforcement**: Minimum 6 characters with uppercase, lowercase, numbers, and special characters
+- **Account Lockout**: 3-attempt threshold with 2-minute automatic lockout
+- **Rate Limiting**: Client-side and Firebase server-side protection against brute force
+- **Secure Communication**: HTTPS with TLS 1.3 encryption via Firebase Hosting
+- **Error Handling**: Generic error messages preventing information disclosure
+- **Output Encoding**: React JSX automatic escaping preventing XSS attacks
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## 🚀 Getting Started
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Prerequisites
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- Node.js (v14 or higher)
+- npm or yarn
+- Firebase account (for deployment)
+- API Keys:
+  - OpenWeatherMap API key
+  - ExchangeRate-API key
 
-## Learn More
+### Installation
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd travelcompanion
+   ```
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-### Code Splitting
+3. **Configure environment variables**
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+   Create a `.env` file in the root directory:
+   ```env
+   REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
+   REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   REACT_APP_FIREBASE_PROJECT_ID=your_project_id
+   REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
+   REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+   REACT_APP_FIREBASE_APP_ID=your_app_id
+   REACT_APP_WEATHER_API_KEY=your_openweathermap_key
+   REACT_APP_EXCHANGE_RATE_API_KEY=your_exchangerate_api_key
+   ```
 
-### Analyzing the Bundle Size
+4. **Initialize Firebase**
+   ```bash
+   npm install -g firebase-tools
+   firebase login
+   firebase init hosting
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+### Running Locally
 
-### Making a Progressive Web App
+**Development mode:**
+```bash
+npm start
+```
+Application will open at `http://localhost:3000`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+**Production build:**
+```bash
+npm run build
+```
 
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+**Test locally before deployment:**
+```bash
+npm run firebase:serve
+```
 
 ### Deployment
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+**Deploy to Firebase Hosting:**
+```bash
+npm run deploy
+```
 
-### `npm run build` fails to minify
+Or manually:
+```bash
+npm run build
+firebase deploy --only hosting
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Your app will be live at: `https://your-project.web.app`
+
+## 📁 Project Structure
+
+```
+travelcompanion/
+├── public/                 # Static files
+├── src/
+│   ├── components/        # React components
+│   │   ├── Home.js       # Landing page
+│   │   ├── Profile.js    # Login/Profile management
+│   │   ├── Register.js   # User registration
+│   │   ├── TravelPlans.js # Travel planner
+│   │   ├── Weather.js    # Weather lookup
+│   │   ├── Currency.js   # Currency converter
+│   │   └── Share.js      # Social sharing
+│   ├── services/
+│   │   ├── authService.js         # Firebase authentication
+│   │   ├── loginAttemptService.js # Account lockout logic
+│   │   └── firebase.js            # Firebase configuration
+│   ├── App.js            # Main app component
+│   ├── App.css           # Global styles
+│   └── index.js          # Entry point
+├── firebase.json         # Firebase hosting config
+├── package.json          # Dependencies
+└── .env                  # Environment variables
+```
+
+## 🔑 Default Demo Credentials
+
+For testing purposes (first version only):
+- **Email:** user@travel.com
+- **Password:** travel123
+
+**Note:** For the secure Firebase version, please register a new account.
+
+## 🛠️ Technologies Used
+
+- **Frontend:** React 18.3.1
+- **Routing:** React Router DOM 6.28.0
+- **Authentication:** Firebase Authentication 11.0.2
+- **Database:** Firebase Firestore 11.0.2
+- **Hosting:** Firebase Hosting 13.27.0
+- **APIs:** 
+  - OpenWeatherMap API (Weather data)
+  - ExchangeRate-API (Currency conversion)
+- **Icons:** React Icons 5.3.0
+
+## 📊 Security Testing
+
+This application has been tested using:
+- OWASP ZAP (Zed Attack Proxy) for vulnerability scanning
+- Manual penetration testing for authentication bypass
+- Brute force attack simulation
+
+Security improvements from Version 1 to Version 2:
+- ✅ Eliminated client-side authentication bypass
+- ✅ Implemented server-side validation
+- ✅ Added account lockout mechanism
+- ✅ Enforced password complexity
+- ✅ Migrated to HTTPS with TLS 1.3 encryption
+
+## 📄 License
+
+This project is developed for educational purposes as part of INT6005CEM Security coursework.
+
+---
+
+**Last Updated:** November 2025  
+**Version:** 2.0 (Secure Firebase Implementation)
